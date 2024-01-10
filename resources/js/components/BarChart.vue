@@ -172,7 +172,10 @@
             const callbacklist = ["beforeTitle", "title", "afterTitle", "beforeBody", "beforeLabel", "label", "labelColor", "labelTextColor", "afterLabel", "afterBody", "beforeFooter", "footer", "afterFooter"];
             for (let i = 0; i < callbacklist.length; i++) {
               if(this.options.plugins?.tooltip?.callbacks?.[callbacklist[i]] != undefined){
-                if(this.options.plugins.tooltip.callbacks[callbacklist[i]].search("function") != -1){
+                if (
+                  typeof this.options.plugins.tooltip.callbacks[callbacklist[i]] === 'string' &&
+                  this.options.plugins.tooltip.callbacks[callbacklist[i]].search("function") != -1
+                ) {
                   eval("this.options.plugins.tooltip.callbacks." + callbacklist[i] + " = " + this.options.plugins.tooltip.callbacks[callbacklist[i]]);
                 }
               }
