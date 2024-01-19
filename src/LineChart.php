@@ -2,10 +2,13 @@
 
 namespace Coroowicaksono\ChartJsIntegration;
 
+use Coroowicaksono\ChartJsIntegration\Traits\HasOptions;
 use Laravel\Nova\Card;
 
 class LineChart extends Card
 {
+    use HasOptions;
+
     /**
      * The width of the card (1/3, 1/2, or full).
      *
@@ -40,11 +43,6 @@ class LineChart extends Card
     public function type(string $type): self
     {
         return $this->withMeta(['type' => $type]);
-    }
-
-    public function options(array $options): self
-    {
-        return $this->withMeta(['options' => (object) $options]);
     }
 
     public function animations(array $animations): self
