@@ -1,6 +1,7 @@
 <?php
-use Illuminate\Http\Request;
+
 use Illuminate\Support\Facades\Route;
+
 /*
 |--------------------------------------------------------------------------
 | Card API Routes
@@ -11,5 +12,8 @@ use Illuminate\Support\Facades\Route;
 | as many additional routes to this file as your card may require.
 |
 */
-Route::get('/endpoint', \Coroowicaksono\ChartJsIntegration\Api\TotalRecordsController::class . '@handle');
-Route::get('/circle-endpoint', \Coroowicaksono\ChartJsIntegration\Api\TotalCircleController::class . '@handle');
+
+Route::group(['middleware' => ['nova:api']], function () {
+    Route::get('/endpoint', \Coroowicaksono\ChartJsIntegration\Api\TotalRecordsController::class . '@handle');
+    Route::get('/circle-endpoint', \Coroowicaksono\ChartJsIntegration\Api\TotalCircleController::class . '@handle');
+});
