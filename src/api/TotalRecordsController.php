@@ -23,17 +23,18 @@ class TotalRecordsController extends Controller
         if ($request->input('model')) {
             $request->merge(['model' => urldecode($request->input('model'))]);
         }
-        $showTotal = isset($request->options) ? json_decode($request->options, true)['showTotal'] ?? true : true;
-        $totalLabel = isset($request->options) ? json_decode($request->options, true)['totalLabel'] ?? 'Total' : 'Total';
+
+        $showTotal = isset($request->options) ? filter_var($request->options['showTotal'] ?? true, FILTER_VALIDATE_BOOL) : true;
+        $totalLabel = isset($request->options) ? $request->options['totalLabel'] ?? 'Total' : 'Total';
         $chartType = $request->type ?? 'bar';
-        $advanceFilterSelected = isset($request->options) ? json_decode($request->options, true)['advanceFilterSelected'] ?? false : false;
-        $dataForLast = isset($request->options) ? json_decode($request->options, true)['latestData'] ?? 3 : 3;
-        $unitOfMeasurement = isset($request->options) ? json_decode($request->options, true)['uom'] ?? 'month' : 'month';
-        $startWeek = isset($request->options) ? json_decode($request->options, true)['startWeek'] ?? '1' : '1';
+        $advanceFilterSelected = isset($request->options) ? filter_var($request->options['advanceFilterSelected'] ?? false, FILTER_VALIDATE_BOOL) : false;
+        $dataForLast = isset($request->options) ? $request->options['latestData'] ?? 3 : 3;
+        $unitOfMeasurement = isset($request->options) ? $request->options['uom'] ?? 'month' : 'month';
+        $startWeek = isset($request->options) ? $request->options['startWeek'] ?? '1' : '1';
         if(!in_array($unitOfMeasurement, ['day', 'week', 'month', 'hour'])){
             throw new ThrowError('UOM not defined correctly. <br/>Check documentation: https://github.com/coroo/nova-chartjs');
         }
-        $calculation = isset($request->options) ? json_decode($request->options, true)['sum'] ?? 1 : 1;
+        $calculation = isset($request->options) ? $request->options['sum'] ?? 1 : 1;
         $request->validate(['model'   => ['bail', 'required', 'min:1', 'string']]);
         $model = $request->input('model');
         $modelInstance = new $model;
@@ -53,7 +54,7 @@ class TotalRecordsController extends Controller
             $defaultColor = array("rgba($brandColor, 1)", "#ffcc5c","#91e8e1","#ff6f69","#88d8b0","#b088d8","#d8b088", "#88b0d8", "#6f69ff","#7cb5ec","#434348","#90ed7d","#8085e9","#f7a35c","#f15c80","#e4d354","#2b908f","#f45b5b","#91e8e1","#E27D60","#85DCB","#E8A87C","#C38D9E","#41B3A3","#67c4a7","#992667","#ff4040","#ff7373","#d2d2d2");
             if(isset($request->series)){
                 foreach($request->series as $seriesKey => $serieslist){
-                    $seriesData = json_decode($serieslist);
+                    $seriesData = is_array($serieslist) ? (object) $serieslist : json_decode($serieslist);
                     $filter = $seriesData->filter;
                     $labelList[$seriesKey] = $seriesData->label;
                     if(empty($filter->value)&&isset($filter->operator)&&($filter->operator=='IS NULL' || $filter->operator=='IS NOT NULL')) {
@@ -62,11 +63,11 @@ class TotalRecordsController extends Controller
                         $seriesSql .= ", SUM(CASE WHEN ";
                         $countFilter = count($filter);
                         foreach($filter as $keyFilter => $listFilter){
-                            $listFilterValue = is_array($listFilter->value)
-                                ? '(' . implode(',', $listFilter->value) . ')'
-                                : "'$listFilter->value'";
+                            $listFilterValue = is_array($listFilter['value'])
+                                ? '(' . implode(',', $listFilter['value']) . ')'
+                                : "'" . $listFilter['value'] . "'";
 
-                            $seriesSql .= " ".$listFilter->key." ".($listFilter->operator ?? "=")." $listFilterValue ";
+                            $seriesSql .= " ".$listFilter['key']." ".($listFilter['operator'] ?? "=")." $listFilterValue ";
                             $seriesSql .= $countFilter-1 != $keyFilter ? " AND " : "";
                         }
                         $seriesSql .= "then ".$calculation." else 0 end) as '".$labelList[$seriesKey]."'";
@@ -106,7 +107,7 @@ class TotalRecordsController extends Controller
                     ->orderBy('catorder', 'asc');
             } else if($unitOfMeasurement=='week'){
                 if(isset($request->join)){
-                    $joinInformation = json_decode($request->join, true);
+                    $joinInformation = $request->join;
                     if($connectionName == 'pgsql'){
                         $query = $model::selectRaw("to_char(DATE_TRUNC('week', ".$xAxisColumn."), 'YYYYWW') AS cat, to_char(DATE_TRUNC('week', ".$xAxisColumn."), 'YYYYWW') AS catorder, sum(".$calculation.") counted".$seriesSql)
                             ->join($joinInformation['joinTable'], $joinInformation['joinColumnFirst'], $joinInformation['joinEqual'], $joinInformation['joinColumnSecond']);
@@ -203,8 +204,8 @@ class TotalRecordsController extends Controller
                     ->orderBy('catorder', 'asc');
             }
 
-            if(isset(json_decode($request->options, true)['queryFilter'])){
-                $queryFilter = json_decode($request->options, true)['queryFilter'];
+            if(isset($request->options['queryFilter'])){
+                $queryFilter = $request->options['queryFilter'];
                 foreach($queryFilter as $qF){
                     if(isset($qF['value']) && !is_array($qF['value'])){
                         if(isset($qF['operator'])){
@@ -242,7 +243,7 @@ class TotalRecordsController extends Controller
             if(isset($request->series)){
                 $countKey = 0;
                 foreach($request->series as $sKey => $sData){
-                    $dataSeries = json_decode($sData);
+                    $dataSeries = is_array($sData) ? (object) $sData : json_decode($sData);
                     $filter = $dataSeries->filter;
                     $yAxis[$sKey]['label'] = $dataSeries->label;
                     if(isset($dataSeries->fill)){
@@ -296,3 +297,4 @@ class TotalRecordsController extends Controller
         return $yAxis;
     }
 }
+
